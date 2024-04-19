@@ -32,23 +32,23 @@ data(motifs)
 seurat_object <- Seurat::FindVariableFeatures(seurat_object, assay='RNA')
 
 # Initiate GRN object and select candidate regions
-seurat_object <- initiate_grn(seurat_object)
+grn_object <- initiate_grn(seurat_object)
 
 # Scan candidate regions for TF binding motifs
-seurat_object <- find_motifs(
-    seurat_object,
+grn_object <- find_motifs(
+    grn_object,
     pfm = motifs,
     genome = BSgenome.Hsapiens.UCSC.hg38
 )
 
 # Infer gene regulatory network
-seurat_object <- infer_grn(seurat_object)
+grn_object <- infer_grn(grn_object)
 
 # Print inferred coefficients
-coef(seurat_object)
+coef(grn_object)
 
 # Find gene and regulatory modules 
-test_srt <- find_modules(test_srt)
+test_srt <- find_modules(grn_object)
 
 # Print modules
 NetworkModules(test_srt)
