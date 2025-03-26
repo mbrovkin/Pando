@@ -345,10 +345,18 @@ fit_grn_models.GRNData <- function(
             return()
         }
 
+        
         target <- str_replace_all(g, '-', '_') %>% str_replace_all("[\\(\\)]", "\\\\\\0")  
+
+        frml_string <- map(frml_string, function(x) {
+            # Escape special characters like parentheses
+            x$frml <- str_replace_all(x$frml, '[\\(\\)]', '\\\\\\0')
+            return(x)
+            })
         model_frml <- as.formula(
             paste0(target, ' ~ ', paste0(map(frml_string, function(x) x$frml),  collapse=' + '))
         )
+    
         
         # Get expression data
         nfeats <- sum(map_dbl(frml_string, function(x) length(x$tfs)))
