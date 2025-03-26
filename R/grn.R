@@ -453,8 +453,8 @@ format_coefs <- function(coefs, term=':', adjust_method='fdr'){
         select(-region_, -tf_) %>%
         mutate(
             region = str_replace_all(region, '_', '-'),
-            tf = str_replace_all(tf, '_', '-') %>% str_replace_all(target, '`', ''),
-            target = str_replace_all(target, '_', '-') %>% str_replace_all(target, '`', '')
+            tf = str_replace_all(tf, '_', '-') %>% str_replace_all('`', ''),
+            target = str_replace_all(target, '_', '-') %>% str_replace_all('`', '')
         ) %>%
         select(tf, target, region, term, everything())
     return(coefs_use)
