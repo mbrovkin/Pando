@@ -334,7 +334,7 @@ fit_grn_models.GRNData <- function(
                 return()
             }
             peak_name <- str_replace_all(p, '-', '_')
-            tf_name <- str_replace_all(peak_tfs, '-', '_') %>% str_replace_all("[\\(\\)]", "\\\\\\0")  #some gene names contain special characters
+            tf_name <- str_replace_all(peak_tfs, '-', '_') %>% str_replace_all("[\\(\\)]", "\\\\\\\\0")   #some gene names contain special characters
             formula_str <- paste(
                 paste(peak_name, interaction_term, tf_name, sep=' '), collapse = ' + ')
             return(list(tfs=peak_tfs, frml=formula_str))
@@ -345,11 +345,11 @@ fit_grn_models.GRNData <- function(
             return()
         }
 
-        target <- str_replace_all(g, '-', '_') %>% str_replace_all("[\\(\\)]", "\\\\\\0") 
+        target <- str_replace_all(g, '-', '_') %>% str_replace_all("[\\(\\)]", "\\\\\\\\0")  
         model_frml <- as.formula(
             paste0(target, ' ~ ', paste0(map(frml_string, function(x) x$frml),  collapse=' + '))
         )
-
+        
         # Get expression data
         nfeats <- sum(map_dbl(frml_string, function(x) length(x$tfs)))
         gene_tfs <- purrr::reduce(map(frml_string, function(x) x$tfs), union)
@@ -357,8 +357,8 @@ fit_grn_models.GRNData <- function(
         model_mat <- as.data.frame(cbind(gene_x, peak_x))
         if (scale) model_mat <- as.data.frame(scale(as.matrix(model_mat)))
                                       
-        colnames(model_mat) <- str_replace_all(colnames(model_mat), '-', '_') %>% str_replace_all("[\\(\\)]", "\\\\\\0")                      
-
+        colnames(model_mat) <- str_replace_all(colnames(model_mat), '-', '_') %>% 
+                                      str_replace_all("[\\(\\)]", "\\\\\\\\0")                        
         log_message('Fitting model with ', nfeats, ' variables for ', g, verbose=verbose==2)
         result <- try(fit_model(
             model_frml,
