@@ -276,30 +276,31 @@ fit_grn_models.GRNData <- function(
     model_fits <- map_par(features, function(g){
 
         # Select peaks near gene
-        if (!`g`%in%rownames(peaks2gene)){
+        if (!g%in%rownames(peaks2gene)){
             log_message('Warning: ', g, ' not found in EnsDb', verbose=verbose==2)
             return()
         }
-        gene_peaks <- as.logical(peaks2gene[`g`, ])
+        gene_peaks <- as.logical(peaks2gene[g, ])
         if (sum(gene_peaks)==0){
-            log_message('Warning: No peaks found near ', `g`, verbose=verbose==2)
+            log_message('Warning: No peaks found near ', g, verbose=verbose==2)
             return()
         }
-
+        log_message('Selecting peaks correlating with target gene expression...', verbose=verbose)
         # Select peaks correlating with target gene expression
-        g_x <- gene_data[gene_groups, `g`, drop=FALSE]
+        g_x <- gene_data[gene_groups, g, drop=FALSE]
         peak_x <- peak_data[peak_groups, gene_peaks, drop=FALSE]
         peak_g_cor <- as(sparse_cor(peak_x, g_x), 'generalMatrix')
         peak_g_cor[is.na(peak_g_cor)] <- 0
         peaks_use <- rownames(peak_g_cor)[abs(peak_g_cor[, 1]) > peak_cor]
         if (length(peaks_use)==0){
-            log_message('Warning: No correlating peaks found for ', `g`, verbose=verbose==2)
+            log_message('Warning: No correlating peaks found for ', g, verbose=verbose==2)
             return()
         }
         peak_x <- peak_x[, peaks_use, drop=FALSE]
         peak_motifs <- peaks2motif[gene_peaks, , drop=FALSE][peaks_use, , drop=FALSE]
 
         # Select TFs with motifs in peaks
+        log_message('Selecting TFs with motifs in peaks...', verbose=verbose)
         gene_peak_tfs <- map(rownames(peak_motifs), function(p){
             x <- as.logical(peak_motifs[p, ])
             peak_tfs <- colMaxs(motif2tf[x, , drop=FALSE])
@@ -310,6 +311,7 @@ fit_grn_models.GRNData <- function(
         names(gene_peak_tfs) <- rownames(peak_motifs)
 
         # Check correlation of peaks with target gene
+        log_message('Check correlation of peaks with target gene...', verbose=verbose)
         gene_tfs <- purrr::reduce(gene_peak_tfs, union)
         tf_x <- gene_data[gene_groups, gene_tfs, drop=FALSE]
         tf_g_cor <- as(sparse_cor(tf_x, g_x), 'generalMatrix')
@@ -354,7 +356,8 @@ fit_grn_models.GRNData <- function(
         )
         
         # Get expression data
-        nfeats <- sum(map_dbl(frml_string, function(x) length(x$`tfs`)))
+                                        
+        nfeats <- sum(map_dbl(frml_string, function(x) length(x$`tfs`)))               
         gene_tfs <- purrr::reduce(map(frml_string, function(x) x$`tfs`), union)
         gene_x <- gene_data[gene_groups, union(g, gene_tfs), drop=FALSE]
         model_mat <- as.data.frame(cbind(gene_x, peak_x))
@@ -364,7 +367,7 @@ fit_grn_models.GRNData <- function(
                                       
         log_message('Fitting model with ', nfeats, ' variables for ', g, verbose=verbose==2)
         result <- try(fit_model(
-            `model_frml`,
+            model_frml,
             data = model_mat,
             method = method,
             ...
