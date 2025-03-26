@@ -336,7 +336,9 @@ fit_grn_models.GRNData <- function(
             peak_name <- str_replace_all(p, '-', '_')
             tf_name <- str_replace_all(peak_tfs, '-', '_') %>%
                        str_replace_all("[\\(\\)]", "") %>% 
-                       str_replace_all(":", "")  #some gene names contain special characters, remove
+                       str_replace_all(":", "") %>%
+                        str_replace_all("^([0-9])", "X\\1")
+                         #some gene names contain special characters, remove
             formula_str <- paste(
                 paste(peak_name, interaction_term, tf_name, sep=' '), collapse = ' + ')
             return(list(tfs=peak_tfs, frml=formula_str))
@@ -348,8 +350,10 @@ fit_grn_models.GRNData <- function(
         }
 
         
-        target <- str_replace_all(g, '-', '_') %>% str_replace_all("[\\(\\)]", "") %>% 
-                       str_replace_all(":", "")  #some gene names contain special characters, remove
+        target <- str_replace_all(g, '-', '_') %>% 
+                        str_replace_all("[\\(\\)]", "") %>% 
+                           str_replace_all(":", "") %>%
+                                str_replace_all("^([0-9])", "X\\1")  #some gene names contain special characters, remove
 
         model_frml <- as.formula(
             paste0(target, ' ~ ', paste0(map(frml_string, function(x) x$frml),  collapse=' + '))
@@ -365,7 +369,8 @@ fit_grn_models.GRNData <- function(
                                       
         colnames(model_mat) <- str_replace_all(colnames(model_mat), '-', '_') %>% 
                                         str_replace_all("[\\(\\)]", "") %>% 
-                                        str_replace_all(":", "")  #some gene names contain special characters, remove                       
+                                        str_replace_all(":", "") %>%
+                                        str_replace_all("^([0-9])", "X\\1") #some gene names contain special characters, remove                       
         log_message('Fitting model with ', nfeats, ' variables for ', g, verbose=verbose==2)
         result <- try(fit_model(
             model_frml,
