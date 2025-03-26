@@ -276,24 +276,24 @@ fit_grn_models.GRNData <- function(
     model_fits <- map_par(features, function(g){
 
         # Select peaks near gene
-        if (!g%in%rownames(peaks2gene)){
+        if (!`g`%in%rownames(peaks2gene)){
             log_message('Warning: ', g, ' not found in EnsDb', verbose=verbose==2)
             return()
         }
-        gene_peaks <- as.logical(peaks2gene[g, ])
+        gene_peaks <- as.logical(peaks2gene[`g`, ])
         if (sum(gene_peaks)==0){
-            log_message('Warning: No peaks found near ', g, verbose=verbose==2)
+            log_message('Warning: No peaks found near ', `g`, verbose=verbose==2)
             return()
         }
 
         # Select peaks correlating with target gene expression
-        g_x <- gene_data[gene_groups, g, drop=FALSE]
+        g_x <- gene_data[gene_groups, `g`, drop=FALSE]
         peak_x <- peak_data[peak_groups, gene_peaks, drop=FALSE]
         peak_g_cor <- as(sparse_cor(peak_x, g_x), 'generalMatrix')
         peak_g_cor[is.na(peak_g_cor)] <- 0
         peaks_use <- rownames(peak_g_cor)[abs(peak_g_cor[, 1]) > peak_cor]
         if (length(peaks_use)==0){
-            log_message('Warning: No correlating peaks found for ', g, verbose=verbose==2)
+            log_message('Warning: No correlating peaks found for ', `g`, verbose=verbose==2)
             return()
         }
         peak_x <- peak_x[, peaks_use, drop=FALSE]
@@ -327,53 +327,42 @@ fit_grn_models.GRNData <- function(
             rename('tf'=1, 'corr'=2)
 
         # Filter TFs and make formula string
-        frml_string <- map(names(gene_peak_tfs), function(p){
+        `frml_string` <- map(names(gene_peak_tfs), function(p){
             peak_tfs <- gene_peak_tfs[[p]]
             peak_tfs <- peak_tfs[peak_tfs%in%tfs_use]
             if (length(peak_tfs)==0){
                 return()
             }
-            peak_name <- str_replace_all(p, '-', '_')
-            tf_name <- str_replace_all(peak_tfs, '-', '_') %>%
-                       str_replace_all("[\\(\\)]", "") %>% 
-                       str_replace_all(":", "") %>%
-                        str_replace_all("^([0-9])", "X\\1")
-                         #some gene names contain special characters, remove
+            `peak_name` <- str_replace_all(p, '-', '_')
+            `tf_name` <- str_replace_all(peak_tfs, '-', '_')
             formula_str <- paste(
-                paste(peak_name, interaction_term, tf_name, sep=' '), collapse = ' + ')
-            return(list(tfs=peak_tfs, frml=formula_str))
+                paste(`peak_name`, interaction_term, `tf_name`, sep=' '), collapse = ' + ')
+            return(list(tfs=`peak_tfs`, frml=`formula_str`))
         })
-        frml_string <- frml_string[!map_lgl(frml_string, is.null)]
-        if (length(frml_string)==0){
+        `frml_string` <- `frml_string`[!map_lgl(`frml_string`, is.null)]
+        if (length(`frml_string`)==0){
             log_message('Warning: No valid peak:TF pairs found for ', g, verbose=verbose==2)
             return()
         }
 
         
-        target <- str_replace_all(g, '-', '_') %>% 
-                        str_replace_all("[\\(\\)]", "") %>% 
-                           str_replace_all(":", "") %>%
-                                str_replace_all("^([0-9])", "X\\1")  #some gene names contain special characters, remove
-
+        target <- str_replace_all(g, '-', '_')
         model_frml <- as.formula(
-            paste0(target, ' ~ ', paste0(map(frml_string, function(x) x$frml),  collapse=' + '))
+            paste0(`target`, ' ~ ', paste0(map(`frml_string`, function(x) x$`frml`),  collapse=' + '))
         )
     
         
         # Get expression data
-        nfeats <- sum(map_dbl(frml_string, function(x) length(x$tfs)))
-        gene_tfs <- purrr::reduce(map(frml_string, function(x) x$tfs), union)
+        nfeats <- sum(map_dbl(`frml_string`, function(x) length(x$`tfs`)))
+        gene_tfs <- purrr::reduce(map(`frml_string`, function(x) x$`tfs`), union)
         gene_x <- gene_data[gene_groups, union(g, gene_tfs), drop=FALSE]
         model_mat <- as.data.frame(cbind(gene_x, peak_x))
         if (scale) model_mat <- as.data.frame(scale(as.matrix(model_mat)))
                                       
-        colnames(model_mat) <- str_replace_all(colnames(model_mat), '-', '_') %>% 
-                                        str_replace_all("[\\(\\)]", "") %>% 
-                                        str_replace_all(":", "") %>%
-                                        str_replace_all("^([0-9])", "X\\1") #some gene names contain special characters, remove                       
+        colnames(model_mat) <- str_replace_all(colnames(model_mat), '-', '_')                      
         log_message('Fitting model with ', nfeats, ' variables for ', g, verbose=verbose==2)
         result <- try(fit_model(
-            model_frml,
+            `model_frml`,
             data = model_mat,
             method = method,
             ...
@@ -394,13 +383,13 @@ fit_grn_models.GRNData <- function(
         log_message('Warning: Fitting model failed for all genes.', verbose=verbose)
     }
 
-    coefs <- map_dfr(model_fits, function(x) x$coefs, .id='target')
+    coefs <- map_dfr(model_fits, function(x) x$`coefs`, .id='target')
     coefs <- format_coefs(coefs, term=interaction_term, adjust_method=adjust_method)
-    corrs <- map_dfr(model_fits, function(x) x$corr, .id='target')
+    corrs <- map_dfr(model_fits, function(x) x$`corr`, .id='target')
     if (nrow(coefs)>0){
         coefs <- suppressMessages(left_join(coefs, corrs))
     }
-    gof <- map_dfr(model_fits, function(x) x$gof, .id='target')
+    gof <- map_dfr(model_fits, function(x) x$`gof`, .id='target')
 
     params <- list()
     params[['method']] <- method
