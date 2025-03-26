@@ -334,7 +334,9 @@ fit_grn_models.GRNData <- function(
                 return()
             }
             peak_name <- str_replace_all(p, '-', '_')
-            tf_name <- str_replace_all(peak_tfs, '-', '_') %>% str_replace_all("[\\(\\)]", "\\\\\\0")   #some gene names contain special characters
+            tf_name <- str_replace_all(peak_tfs, '-', '_') %>%
+                       str_replace_all("[\\(\\)]", "") %>% 
+                       str_replace_all(":", "")  #some gene names contain special characters, remove
             formula_str <- paste(
                 paste(peak_name, interaction_term, tf_name, sep=' '), collapse = ' + ')
             return(list(tfs=peak_tfs, frml=formula_str))
@@ -346,13 +348,9 @@ fit_grn_models.GRNData <- function(
         }
 
         
-        target <- str_replace_all(g, '-', '_') %>% str_replace_all("[\\(\\)]", "\\\\\\0")  
+        target <- str_replace_all(g, '-', '_') %>% str_replace_all("[\\(\\)]", "") %>% 
+                       str_replace_all(":", "")  #some gene names contain special characters, remove
 
-        frml_string <- map(frml_string, function(x) {
-            # Escape special characters like parentheses
-            x$frml <- str_replace_all(x$frml, '[\\(\\)]', '\\\\\\0')
-            return(x)
-            })
         model_frml <- as.formula(
             paste0(target, ' ~ ', paste0(map(frml_string, function(x) x$frml),  collapse=' + '))
         )
@@ -366,7 +364,8 @@ fit_grn_models.GRNData <- function(
         if (scale) model_mat <- as.data.frame(scale(as.matrix(model_mat)))
                                       
         colnames(model_mat) <- str_replace_all(colnames(model_mat), '-', '_') %>% 
-                                      str_replace_all("[\\(\\)]", "\\\\\\0")                        
+                                        str_replace_all("[\\(\\)]", "") %>% 
+                                        str_replace_all(":", "")  #some gene names contain special characters, remove                       
         log_message('Fitting model with ', nfeats, ' variables for ', g, verbose=verbose==2)
         result <- try(fit_model(
             model_frml,
@@ -455,10 +454,8 @@ format_coefs <- function(coefs, term=':', adjust_method='fdr'){
         select(-region_, -tf_) %>%
         mutate(
             region = str_replace_all(region, '_', '-'),
-            tf = str_replace_all(tf, '_', '-') %>%
-                   str_replace_all("\\\\([\\(\\)])", "\\1"),
-            target = str_replace_all(target, '_', '-') %>%
-                   str_replace_all("\\\\([\\(\\)])", "\\1")
+            tf = str_replace_all(tf, '_', '-'),
+            target = str_replace_all(target, '_', '-')
         ) %>%
         select(tf, target, region, term, everything())
     return(coefs_use)
