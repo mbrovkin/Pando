@@ -335,6 +335,7 @@ fit_grn_models.GRNData <- function(
             }
             peak_name <- str_replace_all(p, '-', '_')
             tf_name <- str_replace_all(peak_tfs, '-', '_')
+            tf_name <- paste0("`", tf_name, "`")
             formula_str <- paste(
                 paste(peak_name, interaction_term, tf_name, sep=' '), collapse = ' + ')
             return(list(tfs=peak_tfs, frml=formula_str))
@@ -347,10 +348,10 @@ fit_grn_models.GRNData <- function(
 
         
         target <- str_replace_all(g, '-', '_')
+        target <- paste0("`", target, "`")
         model_frml <- as.formula(
             paste0(target, ' ~ ', paste0(map(frml_string, function(x) x$`frml`),  collapse=' + '))
         )
-    
         
         # Get expression data
         nfeats <- sum(map_dbl(frml_string, function(x) length(x$`tfs`)))
@@ -363,7 +364,7 @@ fit_grn_models.GRNData <- function(
                                       
         log_message('Fitting model with ', nfeats, ' variables for ', g, verbose=verbose==2)
         result <- try(fit_model(
-            model_frml,
+            `model_frml`,
             data = model_mat,
             method = method,
             ...
@@ -449,8 +450,8 @@ format_coefs <- function(coefs, term=':', adjust_method='fdr'){
         select(-region_, -tf_) %>%
         mutate(
             region = str_replace_all(region, '_', '-'),
-            tf = str_replace_all(tf, '_', '-'),
-            target = str_replace_all(target, '_', '-')
+            tf = str_replace_all(tf, '_', '-') %>% str_replace_all(target, '`', ''),
+            target = str_replace_all(target, '_', '-') %>% str_replace_all(target, '`', '')
         ) %>%
         select(tf, target, region, term, everything())
     return(coefs_use)
