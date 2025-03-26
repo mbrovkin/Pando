@@ -335,6 +335,8 @@ fit_grn_models.GRNData <- function(
             }
             peak_name <- str_replace_all(p, '-', '_')
             tf_name <- str_replace_all(peak_tfs, '-', '_')
+            #some gene names contain special characters
+            tf_name <- str_replace_all(tf_name, "([:\\(\\)])", "\\\\\\1") 
             formula_str <- paste(
                 paste(peak_name, interaction_term, tf_name, sep=' '), collapse = ' + ')
             return(list(tfs=peak_tfs, frml=formula_str))
@@ -346,6 +348,7 @@ fit_grn_models.GRNData <- function(
         }
 
         target <- str_replace_all(g, '-', '_')
+        target <- str_replace_all(target, "([:\\(\\)])", "\\\\\\1")
         model_frml <- as.formula(
             paste0(target, ' ~ ', paste0(map(frml_string, function(x) x$frml),  collapse=' + '))
         )
@@ -356,7 +359,9 @@ fit_grn_models.GRNData <- function(
         gene_x <- gene_data[gene_groups, union(g, gene_tfs), drop=FALSE]
         model_mat <- as.data.frame(cbind(gene_x, peak_x))
         if (scale) model_mat <- as.data.frame(scale(as.matrix(model_mat)))
+                                      
         colnames(model_mat) <- str_replace_all(colnames(model_mat), '-', '_')
+        colnames(model_mat) <- str_replace_all(colnames(model_mat), "([:\\(\\)])", "\\\\\\1")                        
 
         log_message('Fitting model with ', nfeats, ' variables for ', g, verbose=verbose==2)
         result <- try(fit_model(
@@ -446,14 +451,12 @@ format_coefs <- function(coefs, term=':', adjust_method='fdr'){
         select(-region_, -tf_) %>%
         mutate(
             region = str_replace_all(region, '_', '-'),
-            tf = str_replace_all(tf, '_', '-'),
-            target = str_replace_all(target, '_', '-')
+            tf = str_replace_all(tf, "\\\\([:\\(\\)])", "\\1") %>% str_replace_all('_', '-'),
+            target = str_replace_all(target, "\\\\([:\\(\\)])", "\\1") %>% str_replace_all('_', '-')
         ) %>%
         select(tf, target, region, term, everything())
     return(coefs_use)
 }
-
-
 
 #' Find TF modules in regulatory network
 #'
