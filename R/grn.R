@@ -327,20 +327,20 @@ fit_grn_models.GRNData <- function(
             rename('tf'=1, 'corr'=2)
 
         # Filter TFs and make formula string
-        `frml_string` <- map(names(gene_peak_tfs), function(p){
+        frml_string <- map(names(gene_peak_tfs), function(p){
             peak_tfs <- gene_peak_tfs[[p]]
             peak_tfs <- peak_tfs[peak_tfs%in%tfs_use]
             if (length(peak_tfs)==0){
                 return()
             }
-            `peak_name` <- str_replace_all(p, '-', '_')
-            `tf_name` <- str_replace_all(peak_tfs, '-', '_')
+            peak_name <- str_replace_all(p, '-', '_')
+            tf_name <- str_replace_all(peak_tfs, '-', '_')
             formula_str <- paste(
-                paste(`peak_name`, interaction_term, `tf_name`, sep=' '), collapse = ' + ')
-            return(list(tfs=`peak_tfs`, frml=`formula_str`))
+                paste(peak_name, interaction_term, tf_name, sep=' '), collapse = ' + ')
+            return(list(tfs=peak_tfs, frml=formula_str))
         })
-        `frml_string` <- `frml_string`[!map_lgl(`frml_string`, is.null)]
-        if (length(`frml_string`)==0){
+        frml_string <- frml_string[!map_lgl(frml_string, is.null)]
+        if (length(frml_string)==0){
             log_message('Warning: No valid peak:TF pairs found for ', g, verbose=verbose==2)
             return()
         }
@@ -348,21 +348,22 @@ fit_grn_models.GRNData <- function(
         
         target <- str_replace_all(g, '-', '_')
         model_frml <- as.formula(
-            paste0(`target`, ' ~ ', paste0(map(`frml_string`, function(x) x$`frml`),  collapse=' + '))
+            paste0(target, ' ~ ', paste0(map(frml_string, function(x) x$`frml`),  collapse=' + '))
         )
     
         
         # Get expression data
-        nfeats <- sum(map_dbl(`frml_string`, function(x) length(x$`tfs`)))
-        gene_tfs <- purrr::reduce(map(`frml_string`, function(x) x$`tfs`), union)
+        nfeats <- sum(map_dbl(frml_string, function(x) length(x$`tfs`)))
+        gene_tfs <- purrr::reduce(map(frml_string, function(x) x$`tfs`), union)
         gene_x <- gene_data[gene_groups, union(g, gene_tfs), drop=FALSE]
         model_mat <- as.data.frame(cbind(gene_x, peak_x))
         if (scale) model_mat <- as.data.frame(scale(as.matrix(model_mat)))
                                       
-        colnames(model_mat) <- str_replace_all(colnames(model_mat), '-', '_')                      
+        colnames(model_mat) <- str_replace_all(colnames(model_mat), '-', '_')
+                                      
         log_message('Fitting model with ', nfeats, ' variables for ', g, verbose=verbose==2)
         result <- try(fit_model(
-            `model_frml`,
+            model_frml,
             data = model_mat,
             method = method,
             ...
