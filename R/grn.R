@@ -201,7 +201,7 @@ fit_grn_models.GRNData <- function(
             group_name = aggregate_rna_col,
             verbose = FALSE
         )
-        gene_groups <- object@meta.data[[aggregate_rna_col]]
+        gene_groups <- object@data@meta.data[[aggregate_rna_col]]
     }
 
     if (is.null(aggregate_peaks_col)){
