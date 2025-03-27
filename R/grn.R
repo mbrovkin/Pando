@@ -336,6 +336,7 @@ fit_grn_models.GRNData <- function(
                 return()
             }
             peak_name <- str_replace_all(p, '-', '_')
+            peak_name <- paste0("`", peak_name, "`")
             tf_name <- str_replace_all(peak_tfs, '-', '_')
             tf_name <- paste0("`", tf_name, "`")
             formula_str <- paste(
@@ -452,7 +453,7 @@ format_coefs <- function(coefs, term=':', adjust_method='fdr'){
         ) %>%
         select(-region_, -tf_) %>%
         mutate(
-            region = str_replace_all(region, '_', '-'),
+            region = str_replace_all(region, '_', '-') %>% str_replace_all('`', ''),
             tf = str_replace_all(tf, '_', '-') %>% str_replace_all('`', ''),
             target = str_replace_all(target, '_', '-') %>% str_replace_all('`', '')
         ) %>%
